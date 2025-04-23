@@ -2,6 +2,7 @@ package io.github.dockyardmc.sentinel.dockyard
 
 import cz.lukynka.prettylog.log
 import io.github.dockyardmc.DockyardServer
+import io.github.dockyardmc.extentions.sendMessage
 import io.github.dockyardmc.player.PlayerManager
 import io.github.dockyardmc.sentinel.common.platform.SentinelPlatform
 import io.github.dockyardmc.sentinel.common.punishment.Punishment
@@ -29,13 +30,17 @@ class SentinelPlatformDockyard : SentinelPlatform {
     }
 
     override fun kickPlayer(uuid: UUID, punishment: Punishment, kickMessage: String) {
-        val player = PlayerManager.getPlayerByUUID(uuid)
+        val player = PlayerManager.getPlayerByUUIDOrNull(uuid) ?: return
         log("$player")
         player.kick(kickMessage)
     }
 
     override fun sendMessage(uuid: UUID, message: String) {
-        val player = PlayerManager.getPlayerByUUID(uuid)
+        val player = PlayerManager.getPlayerByUUIDOrNull(uuid) ?: return
         player.sendMessage(message)
+    }
+
+    override fun broadcastMessageToStaff(message: String) {
+        PlayerManager.players.filter { player -> player.hasPermission("sentinel.staff.broadcast") }.sendMessage(message)
     }
 }

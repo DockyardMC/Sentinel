@@ -8,6 +8,7 @@ import io.github.dockyardmc.player.systems.GameMode
 import io.github.dockyardmc.sentinel.common.messages.SentinelMessagesConfig
 import io.github.dockyardmc.sentinel.common.platform.SentinelPlatform
 import io.github.dockyardmc.sentinel.dockyard.modules.BanModule
+import io.github.dockyardmc.sentinel.dockyard.modules.MuteModule
 import io.github.dockyardmc.sentinel.dockyard.modules.SentinelModule
 
 fun main() {
@@ -17,7 +18,7 @@ fun main() {
     }
 
     SentinelPlatform.initialize(SentinelPlatformDockyard())
-    SentinelModule.register(BanModule())
+    SentinelModule.register(BanModule(), MuteModule())
     SentinelMessagesConfig.initialize()
 
     Events.on<PlayerJoinEvent> { event ->

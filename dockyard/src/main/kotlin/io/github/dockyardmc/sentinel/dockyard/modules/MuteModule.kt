@@ -3,7 +3,8 @@ package io.github.dockyardmc.sentinel.dockyard.modules
 import cz.lukynka.prettylog.log
 import io.github.dockyardmc.commands.*
 import io.github.dockyardmc.events.Events
-import io.github.dockyardmc.events.PlayerConnectEvent
+import io.github.dockyardmc.events.PacketReceivedEvent
+import io.github.dockyardmc.protocol.packets.play.serverbound.ServerboundPlayerChatMessagePacket
 import io.github.dockyardmc.sentinel.common.PunishmentTimeUnit
 import io.github.dockyardmc.sentinel.common.Sentinel
 import io.github.dockyardmc.sentinel.common.messages.SentinelMessagesConfig
@@ -11,31 +12,37 @@ import io.github.dockyardmc.sentinel.common.utils.toFriendly
 import io.github.dockyardmc.sentinel.dockyard.getOrFetchPlayerUUID
 import io.github.dockyardmc.sentinel.dockyard.modules.SentinelModule.Companion.suggestPlayers
 
-class BanModule : SentinelModule {
+class MuteModule : SentinelModule {
 
     override fun register() {
 
-        Events.on<PlayerConnectEvent> { event ->
-            val uuid = event.player.uuid
-            if (Sentinel.isBanned(uuid)) {
-                val punishment = Sentinel.getBanPunishment(uuid)!!
-                event.player.kick(SentinelMessagesConfig.current.getBannedMessage(punishment))
-                Sentinel.platform.broadcastMessageToStaff(SentinelMessagesConfig.current.getBannedPlayerTriedToSpeakMessage(punishment, event.player.username))
+        Events.on<PacketReceivedEvent> { event ->
+            if(event.packet !is ServerboundPlayerChatMessagePacket) return@on
+            val packet = event.packet as ServerboundPlayerChatMessagePacket
+            val player = event.processor.player
+            val uuid = player.uuid
+
+            if (Sentinel.isMuted(uuid)) {
+                event.cancel()
+                val punishment = Sentinel.getMutePunishment(uuid)!!
+                Sentinel.platform.broadcastMessageToStaff(SentinelMessagesConfig.current.getMutedPlayerTriedToSpeakMessage(punishment, player.username, packet.message))
+                player.sendMessage(SentinelMessagesConfig.current.getMutedMessage(punishment))
             }
         }
 
-        Commands.add("/unban") {
+        Commands.add("/unmute") {
             addArgument("player", StringArgument(), ::suggestPlayers)
-            withPermission("sentinel.command.ban")
-            withDescription("Unbans a banned player")
+            withPermission("sentinel.command.mute")
+            withDescription("Unmutes a player")
             execute { ctx ->
                 val playerUsername = getArgument<String>("player")
 
                 getOrFetchPlayerUUID(playerUsername).thenAccept { uuid ->
-                    if (uuid == null) throw CommandException("${Sentinel.PREFIX}<red>Player with the username $playerUsername does not exist!")
-                    if (!Sentinel.isBanned(uuid)) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is not banned!")
 
-                    Sentinel.unban(uuid, playerUsername)
+                    if (uuid == null) throw CommandException("${Sentinel.PREFIX}<red>Player with the username $playerUsername does not exist!")
+                    if (!Sentinel.isMuted(uuid)) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is not muted!")
+
+                    Sentinel.unmute(uuid, playerUsername)
                 }.exceptionally { exception ->
                     val cause = exception.cause ?: exception
                     if (cause is CommandException) {
@@ -50,19 +57,20 @@ class BanModule : SentinelModule {
             }
         }
 
-        Commands.add("/ban") {
+        Commands.add("/mute") {
             addArgument("player", StringArgument(), ::suggestPlayers)
             addArgument("time", IntArgument())
             addArgument("time_unit", EnumArgument(PunishmentTimeUnit::class))
             addArgument("reason", StringArgument(BrigadierStringType.GREEDY_PHRASE))
 
-            withPermission("sentinel.command.ban")
-            withDescription("Bans a player")
+            withPermission("sentinel.command.mute")
+            withDescription("Mutes a player")
 
             execute { ctx ->
                 val playerUsername = getArgument<String>("player")
                 val reason = getArgument<String>("reason")
                 val punisher = if (ctx.isPlayer) ctx.player!!.username else "System"
+
                 val time = getArgument<Int>("time")
                 val timeUnit = getEnumArgument<PunishmentTimeUnit>("time_unit")
 
@@ -70,9 +78,9 @@ class BanModule : SentinelModule {
 
                 getOrFetchPlayerUUID(playerUsername).thenAccept { uuid ->
                     if (uuid == null) throw CommandException("${Sentinel.PREFIX}<red>Player with the username $playerUsername does not exist!")
-                    if (Sentinel.isBanned(uuid)) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is already banned!")
+                    if (Sentinel.isMuted(uuid)) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is already muted!")
 
-                    Sentinel.ban(uuid, expires?.toFriendly(), reason, punisher, playerUsername)
+                    Sentinel.mute(uuid, expires?.toFriendly(), reason, punisher, playerUsername)
                 }.exceptionally { exception ->
                     val cause = exception.cause ?: exception
                     if (cause is CommandException) {

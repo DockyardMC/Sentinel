@@ -15,6 +15,10 @@ subprojects {
         maven("https://mvn.devos.one/snapshots")
     }
 
+    dependencies {
+        implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+    }
+
     kotlin {
         jvmToolchain(21)
     }
