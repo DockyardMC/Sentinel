@@ -26,10 +26,10 @@ data class Punishment(
         }
     }
 
-    enum class Type(val kicksPlayer: Boolean) {
-        BAN(true),
-        KICK(true),
-        MUTE(false),
-        WARN(false),
+    enum class Type(val kicksPlayer: Boolean, val past: String) {
+        BAN(true, "BANNED"),
+        KICK(true, "KICKED"),
+        MUTE(false, "MUTED"),
+        WARN(false, "WARNED"),
     }
 }

@@ -32,4 +32,8 @@ class StandaloneSentinelPlatform : SentinelPlatform {
         println(message)
     }
 
+    override fun broadcastMessageToStaff(message: String) {
+        TODO("Not yet implemented")
+    }
+
 }
