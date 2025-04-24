@@ -7,18 +7,20 @@ import io.github.dockyardmc.events.PlayerConnectEvent
 import io.github.dockyardmc.sentinel.common.PunishmentTimeUnit
 import io.github.dockyardmc.sentinel.common.Sentinel
 import io.github.dockyardmc.sentinel.common.messages.SentinelMessagesConfig
+import io.github.dockyardmc.sentinel.common.punishment.Punishment
 import io.github.dockyardmc.sentinel.common.utils.toFriendly
-import io.github.dockyardmc.sentinel.dockyard.getOrFetchPlayerUUID
+import io.github.dockyardmc.sentinel.dockyard.getOrFetchSentinelPlayer
 import io.github.dockyardmc.sentinel.dockyard.modules.SentinelModule.Companion.suggestPlayers
+import io.github.dockyardmc.sentinel.dockyard.toSentinelPlayer
 
 class BanModule : SentinelModule {
 
     override fun register() {
 
         Events.on<PlayerConnectEvent> { event ->
-            val uuid = event.player.uuid
-            if (Sentinel.isBanned(uuid)) {
-                val punishment = Sentinel.getBanPunishment(uuid)!!
+            val sentinelPlayer = event.player.toSentinelPlayer()
+            if (sentinelPlayer.isBanned()) {
+                val punishment = sentinelPlayer.getPunishmentOfType(Punishment.Type.BAN)!!
                 event.player.kick(SentinelMessagesConfig.current.getBannedMessage(punishment))
                 Sentinel.platform.broadcastMessageToStaff(SentinelMessagesConfig.current.getBannedPlayerTriedToSpeakMessage(punishment, event.player.username))
             }
@@ -31,11 +33,12 @@ class BanModule : SentinelModule {
             execute { ctx ->
                 val playerUsername = getArgument<String>("player")
 
-                getOrFetchPlayerUUID(playerUsername).thenAccept { uuid ->
-                    if (uuid == null) throw CommandException("${Sentinel.PREFIX}<red>Player with the username $playerUsername does not exist!")
-                    if (!Sentinel.isBanned(uuid)) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is not banned!")
+                getOrFetchSentinelPlayer(playerUsername).thenAccept { player ->
+                    if (player == null) throw CommandException("${Sentinel.PREFIX}<red>Player with the username $playerUsername does not exist!")
+                    if (!player.isBanned()) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is not banned!")
 
-                    Sentinel.unban(uuid, playerUsername)
+                    Sentinel.unban(player)
+
                 }.exceptionally { exception ->
                     val cause = exception.cause ?: exception
                     if (cause is CommandException) {
@@ -66,13 +69,13 @@ class BanModule : SentinelModule {
                 val time = getArgument<Int>("time")
                 val timeUnit = getEnumArgument<PunishmentTimeUnit>("time_unit")
 
-                val expires = if(time == -1) null else timeUnit.getExpireDateFromNow(time)
+                val expires = if (time == -1) null else timeUnit.getExpireDateFromNow(time)
 
-                getOrFetchPlayerUUID(playerUsername).thenAccept { uuid ->
-                    if (uuid == null) throw CommandException("${Sentinel.PREFIX}<red>Player with the username $playerUsername does not exist!")
-                    if (Sentinel.isBanned(uuid)) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is already banned!")
+                getOrFetchSentinelPlayer(playerUsername).thenAccept { sentinelPlayer ->
+                    if (sentinelPlayer == null) throw CommandException("${Sentinel.PREFIX}<red>Player with the username $playerUsername does not exist!")
+                    if (sentinelPlayer.isBanned()) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is already banned!")
 
-                    Sentinel.ban(uuid, expires?.toFriendly(), reason, punisher, playerUsername)
+                    Sentinel.ban(sentinelPlayer, expires?.toFriendly(), reason, punisher)
                 }.exceptionally { exception ->
                     val cause = exception.cause ?: exception
                     if (cause is CommandException) {

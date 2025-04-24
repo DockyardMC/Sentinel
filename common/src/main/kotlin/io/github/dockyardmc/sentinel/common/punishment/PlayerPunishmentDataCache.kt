@@ -3,15 +3,23 @@ package io.github.dockyardmc.sentinel.common.punishment
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.github.dockyard.cz.lukynka.hollow.HollowCache
-import java.util.*
+import io.github.dockyardmc.sentinel.common.platform.SentinelPlayer
 
 object PlayerPunishmentDataCache : HollowCache<PlayerPunishmentData>("player_punishment_data") {
 
-    fun getOrCreate(key: UUID): PlayerPunishmentData {
-        var punishmentData = PlayerPunishmentDataCache.getOrNull(key)
+    fun getOrCreate(player: SentinelPlayer): PlayerPunishmentData {
+        var punishmentData = PlayerPunishmentDataCache.getOrNull(player.uuid)
+
+        // create new entry in the database if it doesn't exist
         if (punishmentData == null) {
-            punishmentData = PlayerPunishmentData(key, mutableListOf())
-            PlayerPunishmentDataCache[key] = punishmentData
+            punishmentData = PlayerPunishmentData(player.uuid, player.username, mutableListOf())
+            PlayerPunishmentDataCache[player.uuid] = punishmentData
+        }
+
+        // update last known name if it doesn't match
+        if(punishmentData.lastKnownUsername != player.username) {
+            punishmentData.lastKnownUsername = player.username
+            PlayerPunishmentDataCache[player.uuid] = punishmentData
         }
 
         return punishmentData

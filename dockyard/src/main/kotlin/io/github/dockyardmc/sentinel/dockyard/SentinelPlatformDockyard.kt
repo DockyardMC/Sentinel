@@ -5,8 +5,8 @@ import io.github.dockyardmc.DockyardServer
 import io.github.dockyardmc.extentions.sendMessage
 import io.github.dockyardmc.player.PlayerManager
 import io.github.dockyardmc.sentinel.common.platform.SentinelPlatform
+import io.github.dockyardmc.sentinel.common.platform.SentinelPlayer
 import io.github.dockyardmc.sentinel.common.punishment.Punishment
-import java.util.*
 
 class SentinelPlatformDockyard : SentinelPlatform {
 
@@ -22,22 +22,23 @@ class SentinelPlatformDockyard : SentinelPlatform {
         return SentinelPlatform.PlatformType.SERVER
     }
 
-    override fun onPunishment(uuid: UUID, punishment: Punishment): Boolean {
-        return true //TODO(event)
+    override fun onPunishment(player: SentinelPlayer, punishment: Punishment): Boolean {
+        return true
     }
 
-    override fun onPunishmentStateChange(uuid: UUID, punishment: Punishment, newState: Boolean) {
+    override fun onPunishmentStateChange(player: SentinelPlayer, punishment: Punishment, newState: Boolean) {
+        TODO("events")
     }
 
-    override fun kickPlayer(uuid: UUID, punishment: Punishment, kickMessage: String) {
-        val player = PlayerManager.getPlayerByUUIDOrNull(uuid) ?: return
-        log("$player")
-        player.kick(kickMessage)
+    override fun kickPlayer(player: SentinelPlayer, punishment: Punishment, kickMessage: String) {
+        val dockyardPlayer = PlayerManager.getPlayerByUUIDOrNull(player.uuid) ?: return
+        log("$dockyardPlayer")
+        dockyardPlayer.kick(kickMessage)
     }
 
-    override fun sendMessage(uuid: UUID, message: String) {
-        val player = PlayerManager.getPlayerByUUIDOrNull(uuid) ?: return
-        player.sendMessage(message)
+    override fun sendMessage(player: SentinelPlayer, message: String) {
+        val dockyardPlayer = PlayerManager.getPlayerByUUIDOrNull(player.uuid) ?: return
+        dockyardPlayer.sendMessage(message)
     }
 
     override fun broadcastMessageToStaff(message: String) {

@@ -5,6 +5,7 @@ import io.github.dockyardmc.events.Events
 import io.github.dockyardmc.events.PlayerJoinEvent
 import io.github.dockyardmc.motd.ServerStatusManager
 import io.github.dockyardmc.player.systems.GameMode
+import io.github.dockyardmc.sentinel.common.Sentinel
 import io.github.dockyardmc.sentinel.common.messages.SentinelMessagesConfig
 import io.github.dockyardmc.sentinel.common.platform.SentinelPlatform
 import io.github.dockyardmc.sentinel.dockyard.modules.BanModule
@@ -17,7 +18,7 @@ fun main() {
         withPort(25565)
     }
 
-    SentinelPlatform.initialize(SentinelPlatformDockyard())
+    Sentinel.initialize(SentinelPlatformDockyard())
     SentinelModule.register(BanModule(), MuteModule())
     SentinelMessagesConfig.initialize()
 

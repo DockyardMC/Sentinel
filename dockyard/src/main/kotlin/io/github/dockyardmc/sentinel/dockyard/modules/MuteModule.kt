@@ -8,23 +8,25 @@ import io.github.dockyardmc.protocol.packets.play.serverbound.ServerboundPlayerC
 import io.github.dockyardmc.sentinel.common.PunishmentTimeUnit
 import io.github.dockyardmc.sentinel.common.Sentinel
 import io.github.dockyardmc.sentinel.common.messages.SentinelMessagesConfig
+import io.github.dockyardmc.sentinel.common.punishment.Punishment
 import io.github.dockyardmc.sentinel.common.utils.toFriendly
-import io.github.dockyardmc.sentinel.dockyard.getOrFetchPlayerUUID
+import io.github.dockyardmc.sentinel.dockyard.getOrFetchSentinelPlayer
 import io.github.dockyardmc.sentinel.dockyard.modules.SentinelModule.Companion.suggestPlayers
+import io.github.dockyardmc.sentinel.dockyard.toSentinelPlayer
 
 class MuteModule : SentinelModule {
 
     override fun register() {
 
         Events.on<PacketReceivedEvent> { event ->
-            if(event.packet !is ServerboundPlayerChatMessagePacket) return@on
+            if (event.packet !is ServerboundPlayerChatMessagePacket) return@on
             val packet = event.packet as ServerboundPlayerChatMessagePacket
             val player = event.processor.player
-            val uuid = player.uuid
+            val sentinelPlayer = player.toSentinelPlayer()
 
-            if (Sentinel.isMuted(uuid)) {
+            if (sentinelPlayer.isMuted()) {
                 event.cancel()
-                val punishment = Sentinel.getMutePunishment(uuid)!!
+                val punishment = sentinelPlayer.getPunishmentOfType(Punishment.Type.MUTE)!!
                 Sentinel.platform.broadcastMessageToStaff(SentinelMessagesConfig.current.getMutedPlayerTriedToSpeakMessage(punishment, player.username, packet.message))
                 player.sendMessage(SentinelMessagesConfig.current.getMutedMessage(punishment))
             }
@@ -37,12 +39,12 @@ class MuteModule : SentinelModule {
             execute { ctx ->
                 val playerUsername = getArgument<String>("player")
 
-                getOrFetchPlayerUUID(playerUsername).thenAccept { uuid ->
+                getOrFetchSentinelPlayer(playerUsername).thenAccept { sentinelPlayer ->
 
-                    if (uuid == null) throw CommandException("${Sentinel.PREFIX}<red>Player with the username $playerUsername does not exist!")
-                    if (!Sentinel.isMuted(uuid)) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is not muted!")
+                    if (sentinelPlayer == null) throw CommandException("${Sentinel.PREFIX}<red>Player with the username $playerUsername does not exist!")
+                    if (!sentinelPlayer.isMuted()) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is not muted!")
 
-                    Sentinel.unmute(uuid, playerUsername)
+                    Sentinel.unmute(sentinelPlayer)
                 }.exceptionally { exception ->
                     val cause = exception.cause ?: exception
                     if (cause is CommandException) {
@@ -74,13 +76,13 @@ class MuteModule : SentinelModule {
                 val time = getArgument<Int>("time")
                 val timeUnit = getEnumArgument<PunishmentTimeUnit>("time_unit")
 
-                val expires = if(time == -1) null else timeUnit.getExpireDateFromNow(time)
+                val expires = if (time == -1) null else timeUnit.getExpireDateFromNow(time)
 
-                getOrFetchPlayerUUID(playerUsername).thenAccept { uuid ->
-                    if (uuid == null) throw CommandException("${Sentinel.PREFIX}<red>Player with the username $playerUsername does not exist!")
-                    if (Sentinel.isMuted(uuid)) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is already muted!")
+                getOrFetchSentinelPlayer(playerUsername).thenAccept { sentinelPlayer ->
+                    if (sentinelPlayer == null) throw CommandException("${Sentinel.PREFIX}<red>Player with the username $playerUsername does not exist!")
+                    if (sentinelPlayer.isMuted()) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is already muted!")
 
-                    Sentinel.mute(uuid, expires?.toFriendly(), reason, punisher, playerUsername)
+                    Sentinel.mute(sentinelPlayer, expires?.toFriendly(), reason, punisher)
                 }.exceptionally { exception ->
                     val cause = exception.cause ?: exception
                     if (cause is CommandException) {

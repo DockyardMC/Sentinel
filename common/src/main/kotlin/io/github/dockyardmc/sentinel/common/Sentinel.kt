@@ -1,7 +1,11 @@
 package io.github.dockyardmc.sentinel.common
 
+import cz.lukynka.prettylog.LogType
+import cz.lukynka.prettylog.log
+import io.github.dockyard.cz.lukynka.hollow.Hollow
 import io.github.dockyardmc.sentinel.common.messages.SentinelMessagesConfig
 import io.github.dockyardmc.sentinel.common.platform.SentinelPlatform
+import io.github.dockyardmc.sentinel.common.platform.SentinelPlayer
 import io.github.dockyardmc.sentinel.common.punishment.PlayerPunishmentDataCache
 import io.github.dockyardmc.sentinel.common.punishment.Punishment
 import io.github.dockyardmc.sentinel.common.utils.FriendlyLocalDateTime
@@ -12,7 +16,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import java.util.*
+import kotlin.system.measureTimeMillis
 
 object Sentinel {
 
@@ -20,70 +24,53 @@ object Sentinel {
     const val PREFIX = "<#ff0a30>⛨ <dark_gray>| <gray>"
     const val LIGHT_COLOR = "<#ff757e>"
 
-    fun setWarnAcknowledged(player: UUID, punishment: Punishment) {
+    fun initialize(platform: SentinelPlatform) {
+        val ms = measureTimeMillis {
+            Sentinel.platform = platform
+            Hollow.initialize("sentinel")
+            PlayerPunishmentDataCache.initialize()
+        }
+        log("Took $ms to load database", LogType.DEBUG)
+    }
+
+    fun setWarnAcknowledged(player: SentinelPlayer, punishment: Punishment) {
         punishment.active = false
         val data = PlayerPunishmentDataCache.getOrCreate(player)
         val index = data.punishments.indexOf(punishment)
         data.punishments[index] = punishment
-        PlayerPunishmentDataCache[player] = data
+        PlayerPunishmentDataCache[player.uuid] = data
     }
 
-    fun sendWarningAcknowledgeMessage(player: UUID, punishment: Punishment) {
+    fun sendWarningAcknowledgeMessage(player: SentinelPlayer, punishment: Punishment) {
         platform.sendMessage(player, " ")
         platform.sendMessage(player, "You have been warned for: ${punishment.reason}")
         platform.sendMessage(player, "Please type following characters in chat: <yellow>${punishment.acknowledgementString!!}")
         platform.sendMessage(player, " ")
     }
 
-    fun isBanned(player: UUID): Boolean {
-        val data = PlayerPunishmentDataCache.getOrCreate(player)
-        val punishments = data.punishments
-        var first = punishments.firstOrNull { punishment -> punishment.type == Punishment.Type.BAN && punishment.active }
-        if (first?.expires != null) {
-            if (first.expires!!.toLocalDateTime().toInstant(TimeZone.UTC) <= Clock.System.now()) {
-                unban(player, player.toString())
-                first = null
-            }
-        }
-        return first != null
-    }
-
-    fun getBanPunishment(player: UUID): Punishment? {
+    fun getFirstPunishmentOfType(type: Punishment.Type, player: SentinelPlayer): Punishment? {
         val punishments = PlayerPunishmentDataCache.getOrCreate(player).punishments
-        val firstBan = punishments.firstOrNull { punishment -> punishment.type == Punishment.Type.BAN && punishment.active } ?: return null
+        val firstBan = punishments.firstOrNull { punishment -> punishment.type == type && punishment.active } ?: return null
         return firstBan
     }
 
-    fun getMutePunishment(player: UUID): Punishment? {
-        val punishments = PlayerPunishmentDataCache.getOrCreate(player).punishments
-        val firstBan = punishments.firstOrNull { punishment -> punishment.type == Punishment.Type.MUTE && punishment.active } ?: return null
-        return firstBan
-    }
-
-    fun isMuted(player: UUID): Boolean {
+    fun hasActivePunishmentOfType(type: Punishment.Type, player: SentinelPlayer): Boolean {
         val data = PlayerPunishmentDataCache.getOrCreate(player)
-        val punishments = data.punishments
-        var first = punishments.firstOrNull { punishment -> punishment.type == Punishment.Type.MUTE && punishment.active }
-        if (first?.expires != null) {
-            if (first.expires!!.toLocalDateTime().toInstant(TimeZone.UTC) <= Clock.System.now()) {
-                unmute(player, player.toString())
-                first = null
-            }
+        removeExpiredPunishments(player)
+        return data.punishments.any { punishment -> punishment.active }
+    }
+
+    fun removeExpiredPunishments(player: SentinelPlayer) {
+        val data = PlayerPunishmentDataCache.getOrCreate(player)
+        data.punishments.filter { punishment -> punishment.active && punishment.expires != null }.forEach { punishment ->
+            if (punishment.expires!!.toLocalDateTime().toInstant(TimeZone.UTC) > Clock.System.now()) return@forEach
+            punishment.active = false
+            PlayerPunishmentDataCache[player.uuid] = data
+            platform.broadcastMessageToStaff("<#ff0a30>⛨ <dark_gray>| <gray>Punishment of type <white>${punishment.type.name}<gray> for player <#ff757e>${player.username}<gray> has expired!")
         }
-        return first != null
     }
 
-    fun hasActiveWarn(player: UUID): Boolean {
-        return PlayerPunishmentDataCache.getOrCreate(player).punishments.firstOrNull { punishment -> punishment.type == Punishment.Type.WARN && punishment.active } != null
-    }
-
-    fun getFirstActiveWarn(player: UUID): Punishment? {
-        val punishments = PlayerPunishmentDataCache.getOrCreate(player).punishments
-        val firstWarn = punishments.firstOrNull { punishment -> punishment.type == Punishment.Type.WARN && punishment.active } ?: return null
-        return firstWarn
-    }
-
-    fun unban(player: UUID, playerName: String) {
+    fun unban(player: SentinelPlayer) {
 
         val data = PlayerPunishmentDataCache.getOrCreate(player)
         data.punishments.forEachIndexed { index, punishment ->
@@ -92,10 +79,10 @@ object Sentinel {
 
             markPunishmentAs(player, index, false)
         }
-        platform.broadcastMessageToStaff("<#ff0a30>⛨ <dark_gray>| <gray>Player <#ff757e>$playerName <gray>has been unbanned!")
+        platform.broadcastMessageToStaff("<#ff0a30>⛨ <dark_gray>| <gray>Player <#ff757e>${player.username} <gray>has been unbanned!")
     }
 
-    fun unmute(player: UUID, playerName: String) {
+    fun unmute(player: SentinelPlayer) {
 
         val data = PlayerPunishmentDataCache.getOrCreate(player)
         data.punishments.forEachIndexed { index, punishment ->
@@ -104,12 +91,12 @@ object Sentinel {
 
             markPunishmentAs(player, index, false)
         }
-        platform.broadcastMessageToStaff("<#ff0a30>⛨ <dark_gray>| <gray>Player <#ff757e>$playerName <gray>has been unmuted!")
+        platform.broadcastMessageToStaff("<#ff0a30>⛨ <dark_gray>| <gray>Player <#ff757e>${player.username} <gray>has been unmuted!")
     }
 
-    fun ban(player: UUID, expires: FriendlyLocalDateTime?, reason: String, punisher: String, playerName: String) {
+    fun ban(player: SentinelPlayer, expires: FriendlyLocalDateTime?, reason: String, punisher: String) {
 
-        if (isBanned(player)) return
+        if (hasActivePunishmentOfType(Punishment.Type.BAN, player)) return
 
         val punishment = Punishment(
             type = Punishment.Type.BAN,
@@ -118,10 +105,10 @@ object Sentinel {
             reason = reason,
             punisher = punisher
         )
-        addPunishment(player, punishment, playerName)
+        addPunishment(player, punishment)
     }
 
-    fun kick(player: UUID, reason: String, punisher: String, playerName: String) {
+    fun kick(player: SentinelPlayer, reason: String, punisher: String) {
 
         val punishment = Punishment(
             type = Punishment.Type.KICK,
@@ -130,12 +117,12 @@ object Sentinel {
             reason = reason,
             punisher = punisher
         )
-        addPunishment(player, punishment, playerName)
+        addPunishment(player, punishment)
     }
 
-    fun mute(player: UUID, expires: FriendlyLocalDateTime?, reason: String, punisher: String, playerName: String) {
+    fun mute(player: SentinelPlayer, expires: FriendlyLocalDateTime?, reason: String, punisher: String) {
 
-        if (isMuted(player)) return
+        if (hasActivePunishmentOfType(Punishment.Type.MUTE, player)) return
 
         val punishment = Punishment(
             type = Punishment.Type.MUTE,
@@ -144,11 +131,11 @@ object Sentinel {
             reason = reason,
             punisher = punisher
         )
-        addPunishment(player, punishment, playerName)
+        addPunishment(player, punishment)
         platform.sendMessage(player, SentinelMessagesConfig.current.getMutedMessage(punishment))
     }
 
-    fun warn(player: UUID, reason: String, punisher: String, playerName: String) {
+    fun warn(player: SentinelPlayer, reason: String, punisher: String) {
 
         val punishment = Punishment(
             type = Punishment.Type.WARN,
@@ -159,17 +146,17 @@ object Sentinel {
             acknowledgementString = getRandomAckString()
 
         )
-        addPunishment(player, punishment, playerName)
+        addPunishment(player, punishment)
     }
 
-    private fun addPunishment(player: UUID, punishment: Punishment, playerName: String) {
+    private fun addPunishment(player: SentinelPlayer, punishment: Punishment) {
 
         if (!platform.onPunishment(player, punishment)) return
 
         val updatedPunishmentData = PlayerPunishmentDataCache.getOrCreate(player)
         updatedPunishmentData.punishments.add(punishment)
 
-        PlayerPunishmentDataCache[player] = updatedPunishmentData
+        PlayerPunishmentDataCache[player.uuid] = updatedPunishmentData
         val message = when (punishment.type) {
             Punishment.Type.BAN -> SentinelMessagesConfig.current.getBannedMessage(punishment)
             Punishment.Type.KICK -> SentinelMessagesConfig.current.getKickedMessage(punishment)
@@ -177,10 +164,10 @@ object Sentinel {
             Punishment.Type.WARN -> TODO()
         }
         if (punishment.type.kicksPlayer) platform.kickPlayer(player, punishment, message)
-        platform.broadcastMessageToStaff(SentinelMessagesConfig.current.getStaffPunishmentMessage(punishment, playerName))
+        platform.broadcastMessageToStaff(SentinelMessagesConfig.current.getStaffPunishmentMessage(punishment, player.username))
     }
 
-    private fun markPunishmentAs(player: UUID, index: Int, active: Boolean) {
+    private fun markPunishmentAs(player: SentinelPlayer, index: Int, active: Boolean) {
         val punishmentData = PlayerPunishmentDataCache.getOrCreate(player)
 
         val punishment = punishmentData.punishments.getOrNull(index) ?: throw IllegalArgumentException("Punishment with id/index $index does not exist for uuid $player")
@@ -189,6 +176,6 @@ object Sentinel {
 
         punishmentData.punishments[index] = punishment
 
-        PlayerPunishmentDataCache[player] = punishmentData
+        PlayerPunishmentDataCache[player.uuid] = punishmentData
     }
 }
