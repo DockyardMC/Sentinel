@@ -15,15 +15,16 @@ data class Punishment(
 ) {
 
     companion object {
-        val CODEC = Codec.of<Punishment> {
-            field("type", Codec.enum(Type::class), Punishment::type)
-            field("expires", FriendlyLocalDateTime.CODEC.optional(), Punishment::expires)
-            field("received", FriendlyLocalDateTime.CODEC, Punishment::received)
-            field("reason", Codecs.String, Punishment::reason)
-            field("punisher", Codecs.String, Punishment::punisher)
-            field("active", Codecs.Boolean, Punishment::active)
-            field("acknowledge_string", Codecs.String.optional(), Punishment::acknowledgementString)
-        }
+        val CODEC = Codec.of(
+            "type", Codec.enum<Type>(), Punishment::type,
+            "expires", FriendlyLocalDateTime.CODEC.optional(), Punishment::expires,
+            "received", FriendlyLocalDateTime.CODEC, Punishment::received,
+            "reason", Codecs.String, Punishment::reason,
+            "punisher", Codecs.String, Punishment::punisher,
+            "active", Codecs.Boolean, Punishment::active,
+            "acknowledge_string", Codecs.String.optional(), Punishment::acknowledgementString,
+            ::Punishment
+        )
     }
 
     enum class Type(val kicksPlayer: Boolean, val past: String) {

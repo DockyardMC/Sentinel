@@ -39,14 +39,15 @@ object SentinelMessagesConfig {
         val mutedPlayerTriedToTalk: String = "{COLOR}⛨ <dark_gray>| <gray>Muted player ({COLOR_LIGHT}{PLAYER}<gray>) tried to talk: <white>{MESSAGE}",
     ) {
         companion object {
-            val CODEC = Codec.of<Messages> {
-                field("banned", Codecs.String, Messages::banned)
-                field("kicked", Codecs.String, Messages::kicked)
-                field("muted", Codecs.String, Messages::muted)
-                field("punished_staff_message", Codecs.String, Messages::punishedStaffMessage)
-                field("banned_player_tried_to_join", Codecs.String, Messages::bannedPlayerTriedToJoin)
-                field("muted_player_tried_to_talk", Codecs.String, Messages::mutedPlayerTriedToTalk)
-            }
+            val CODEC = Codec.of(
+                "banned", Codecs.String, Messages::banned,
+                "kicked", Codecs.String, Messages::kicked,
+                "muted", Codecs.String, Messages::muted,
+                "punished_staff_message", Codecs.String, Messages::punishedStaffMessage,
+                "banned_player_tried_to_join", Codecs.String, Messages::bannedPlayerTriedToJoin,
+                "muted_player_tried_to_talk", Codecs.String, Messages::mutedPlayerTriedToTalk,
+                ::Messages
+            )
         }
 
         private fun getReplacedMessage(string: String): String {

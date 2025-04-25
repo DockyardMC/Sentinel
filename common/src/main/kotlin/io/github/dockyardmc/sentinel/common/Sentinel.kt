@@ -57,7 +57,7 @@ object Sentinel {
     fun hasActivePunishmentOfType(type: Punishment.Type, player: SentinelPlayer): Boolean {
         val data = PlayerPunishmentDataCache.getOrCreate(player)
         removeExpiredPunishments(player)
-        return data.punishments.any { punishment -> punishment.active }
+        return data.punishments.any { punishment -> punishment.active && punishment.type == type }
     }
 
     fun removeExpiredPunishments(player: SentinelPlayer) {
@@ -86,6 +86,7 @@ object Sentinel {
 
         val data = PlayerPunishmentDataCache.getOrCreate(player)
         data.punishments.forEachIndexed { index, punishment ->
+            log("$punishment")
             if (punishment.type != Punishment.Type.MUTE) return@forEachIndexed
             if (!punishment.active) return@forEachIndexed
 

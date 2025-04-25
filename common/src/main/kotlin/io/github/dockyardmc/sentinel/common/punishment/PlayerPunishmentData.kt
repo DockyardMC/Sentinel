@@ -10,10 +10,11 @@ data class PlayerPunishmentData(
     val punishments: MutableList<Punishment>,
 ) {
     companion object {
-        val CODEC = Codec.of<PlayerPunishmentData> {
-            field("uuid", Codecs.UUID, PlayerPunishmentData::uuid)
-            field("last_known_username", Codecs.String, PlayerPunishmentData::lastKnownUsername)
-            field("punishments", Punishment.CODEC.list(), PlayerPunishmentData::punishments)
-        }
+        val CODEC = Codec.of(
+            "uuid", Codecs.UUID, PlayerPunishmentData::uuid,
+            "last_known_username", Codecs.String, PlayerPunishmentData::lastKnownUsername,
+            "punishments", Punishment.CODEC.mutableList(), PlayerPunishmentData::punishments,
+            ::PlayerPunishmentData
+        )
     }
 }

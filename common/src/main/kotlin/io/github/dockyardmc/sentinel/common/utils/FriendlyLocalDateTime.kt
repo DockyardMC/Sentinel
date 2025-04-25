@@ -12,9 +12,10 @@ data class FriendlyLocalDateTime(val epoch: Long) {
 
     companion object {
 
-        val CODEC = Codec.of<FriendlyLocalDateTime> {
-            field("epoch", Codecs.Long, FriendlyLocalDateTime::epoch)
-        }
+        val CODEC = Codec.of(
+            "epoch", Codecs.Long, FriendlyLocalDateTime::epoch,
+            ::FriendlyLocalDateTime
+        )
 
         fun fromLocalDateTime(localDateTime: LocalDateTime): FriendlyLocalDateTime {
             return FriendlyLocalDateTime(localDateTime.toInstant(TimeZone.UTC).toEpochMilliseconds())

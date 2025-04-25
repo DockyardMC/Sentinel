@@ -43,7 +43,6 @@ class MuteModule : SentinelModule {
 
                     if (sentinelPlayer == null) throw CommandException("${Sentinel.PREFIX}<red>Player with the username $playerUsername does not exist!")
                     if (!sentinelPlayer.isMuted()) throw CommandException("${Sentinel.PREFIX}<red>Player $playerUsername is not muted!")
-
                     Sentinel.unmute(sentinelPlayer)
                 }.exceptionally { exception ->
                     val cause = exception.cause ?: exception

@@ -27,12 +27,10 @@ class SentinelPlatformDockyard : SentinelPlatform {
     }
 
     override fun onPunishmentStateChange(player: SentinelPlayer, punishment: Punishment, newState: Boolean) {
-        TODO("events")
     }
 
     override fun kickPlayer(player: SentinelPlayer, punishment: Punishment, kickMessage: String) {
         val dockyardPlayer = PlayerManager.getPlayerByUUIDOrNull(player.uuid) ?: return
-        log("$dockyardPlayer")
         dockyardPlayer.kick(kickMessage)
     }
 
