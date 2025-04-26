@@ -34,6 +34,7 @@ object SentinelMessagesConfig {
         val banned: String = "{COLOR}⛨ <b>{PUNISHMENT}</b> ⛨\n\n<white>You have been banned from this server!\n\n{COLOR_LIGHT}⚠ Reason: <white>{REASON}\n{COLOR_LIGHT}⌚ Expires: <white>{EXPIRES}",
         val kicked: String = "{COLOR}⛨ <b>{PUNISHMENT}</b> ⛨\n\n<white>You have been kicked from this server!\n\n{COLOR_LIGHT}⚠ Reason: <white>{REASON}",
         val muted: String = "\n\n {COLOR}⛨ <b>{PUNISHMENT}</b> ⛨\n\n <white>You have been muted from talking in chat!\n\n {COLOR_LIGHT}⚠ Reason: <white>{REASON}\n {COLOR_LIGHT}⌚ Expires: <white>{EXPIRES}\n\n ",
+        val warned: String = "\n\n {COLOR}⛨ <b>{PUNISHMENT}</b> ⛨\n\n {COLOR_LIGHT}⚠ Reason: <white>{REASON}\n\n <gray>Type <yellow>{ACKNOWLEDGEMENT} <gray>to acknowledge this punishment.\n\n",
         val punishedStaffMessage: String = "{COLOR}⛨ <dark_gray>| <gray>Player {COLOR_LIGHT}{PLAYER} <gray>has been punished, type: <yellow>{TYPE}<gray>, reason: <white>{REASON}<gray>. Expires: <white>{EXPIRES}",
         val bannedPlayerTriedToJoin: String = "{COLOR}⛨ <dark_gray>| <gray>Banned player ({COLOR_LIGHT}{PLAYER}<gray>) tried to join",
         val mutedPlayerTriedToTalk: String = "{COLOR}⛨ <dark_gray>| <gray>Muted player ({COLOR_LIGHT}{PLAYER}<gray>) tried to talk: <white>{MESSAGE}",
@@ -43,6 +44,7 @@ object SentinelMessagesConfig {
                 "banned", Codecs.String, Messages::banned,
                 "kicked", Codecs.String, Messages::kicked,
                 "muted", Codecs.String, Messages::muted,
+                "warned", Codecs.String, Messages::warned,
                 "punished_staff_message", Codecs.String, Messages::punishedStaffMessage,
                 "banned_player_tried_to_join", Codecs.String, Messages::bannedPlayerTriedToJoin,
                 "muted_player_tried_to_talk", Codecs.String, Messages::mutedPlayerTriedToTalk,
@@ -69,6 +71,13 @@ object SentinelMessagesConfig {
                 .replace("{REASON}", punishment.reason)
                 .replace("{PUNISHMENT}", punishment.type.past)
                 .replace("{EXPIRES}", punishment.expires?.toLocalDateTime()?.formatted() ?: "Never")
+        }
+
+        fun getWarnedMessage(punishment: Punishment): String {
+            return getReplacedMessage(warned)
+                .replace("{REASON}", punishment.reason)
+                .replace("{PUNISHMENT}", punishment.type.past)
+                .replace("{ACKNOWLEDGEMENT}", punishment.acknowledgementString!!)
         }
 
         fun getKickedMessage(punishment: Punishment): String {

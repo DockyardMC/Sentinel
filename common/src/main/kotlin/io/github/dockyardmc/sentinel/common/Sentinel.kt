@@ -39,13 +39,11 @@ object Sentinel {
         val index = data.punishments.indexOf(punishment)
         data.punishments[index] = punishment
         PlayerPunishmentDataCache[player.uuid] = data
+        platform.sendMessage(player, "$PREFIX<lime>You have acknowledged your warning, you can send messages in chat again!")
     }
 
     fun sendWarningAcknowledgeMessage(player: SentinelPlayer, punishment: Punishment) {
-        platform.sendMessage(player, " ")
-        platform.sendMessage(player, "You have been warned for: ${punishment.reason}")
-        platform.sendMessage(player, "Please type following characters in chat: <yellow>${punishment.acknowledgementString!!}")
-        platform.sendMessage(player, " ")
+        platform.sendMessage(player, SentinelMessagesConfig.current.getWarnedMessage(punishment))
     }
 
     fun getFirstPunishmentOfType(type: Punishment.Type, player: SentinelPlayer): Punishment? {
@@ -148,6 +146,7 @@ object Sentinel {
 
         )
         addPunishment(player, punishment)
+        sendWarningAcknowledgeMessage(player, punishment)
     }
 
     private fun addPunishment(player: SentinelPlayer, punishment: Punishment) {
@@ -162,8 +161,9 @@ object Sentinel {
             Punishment.Type.BAN -> SentinelMessagesConfig.current.getBannedMessage(punishment)
             Punishment.Type.KICK -> SentinelMessagesConfig.current.getKickedMessage(punishment)
             Punishment.Type.MUTE -> SentinelMessagesConfig.current.getMutedMessage(punishment)
-            Punishment.Type.WARN -> TODO()
+            Punishment.Type.WARN -> SentinelMessagesConfig.current.getWarnedMessage(punishment)
         }
+
         if (punishment.type.kicksPlayer) platform.kickPlayer(player, punishment, message)
         platform.broadcastMessageToStaff(SentinelMessagesConfig.current.getStaffPunishmentMessage(punishment, player.username))
     }

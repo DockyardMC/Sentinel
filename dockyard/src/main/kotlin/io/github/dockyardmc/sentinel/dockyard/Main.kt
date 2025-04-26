@@ -7,11 +7,7 @@ import io.github.dockyardmc.motd.ServerStatusManager
 import io.github.dockyardmc.player.systems.GameMode
 import io.github.dockyardmc.sentinel.common.Sentinel
 import io.github.dockyardmc.sentinel.common.messages.SentinelMessagesConfig
-import io.github.dockyardmc.sentinel.common.platform.SentinelPlatform
-import io.github.dockyardmc.sentinel.dockyard.modules.BanModule
-import io.github.dockyardmc.sentinel.dockyard.modules.KickModule
-import io.github.dockyardmc.sentinel.dockyard.modules.MuteModule
-import io.github.dockyardmc.sentinel.dockyard.modules.SentinelModule
+import io.github.dockyardmc.sentinel.dockyard.modules.*
 
 fun main() {
     val server = DockyardServer {
@@ -20,7 +16,7 @@ fun main() {
     }
 
     Sentinel.initialize(SentinelPlatformDockyard())
-    SentinelModule.register(BanModule(), MuteModule(), KickModule())
+    SentinelModule.register(BanModule(), MuteModule(), KickModule(), WarnModule())
     SentinelMessagesConfig.initialize()
 
     Events.on<PlayerJoinEvent> { event ->
