@@ -1,22 +1,18 @@
 package io.github.dockyardmc.sentinel.common.utils
 
-import io.github.dockyardmc.tide.Codec
-import io.github.dockyardmc.tide.Codecs
+import io.realm.kotlin.types.RealmObject
 import kotlinx.datetime.*
 
-data class FriendlyLocalDateTime(val epoch: Long) {
+class FriendlyLocalDateTime(initial: Long) : RealmObject {
+    var time: Long = initial
+
+    constructor() : this(0L)
 
     fun toLocalDateTime(): LocalDateTime {
-        return Instant.fromEpochMilliseconds(epoch).toLocalDateTime(TimeZone.UTC)
+        return Instant.fromEpochMilliseconds(time).toLocalDateTime(TimeZone.UTC)
     }
 
     companion object {
-
-        val CODEC = Codec.of(
-            "epoch", Codecs.Long, FriendlyLocalDateTime::epoch,
-            ::FriendlyLocalDateTime
-        )
-
         fun fromLocalDateTime(localDateTime: LocalDateTime): FriendlyLocalDateTime {
             return FriendlyLocalDateTime(localDateTime.toInstant(TimeZone.UTC).toEpochMilliseconds())
         }

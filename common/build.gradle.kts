@@ -1,4 +1,5 @@
 plugins {
+    id("io.realm.kotlin") version "3.0.0"
     kotlin("jvm")
 }
 
@@ -10,7 +11,7 @@ repositories {
 }
 
 dependencies {
-    implementation("cz.lukynka:hollow:1.0")
+    implementation("cz.lukynka:hollow-realm:1.2")
     implementation("io.github.dockyardmc:tide:1.6")
     implementation("org.slf4j:slf4j-nop:2.0.9")
     compileOnly("cz.lukynka:pretty-log:1.4")

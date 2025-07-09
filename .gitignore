@@ -44,3 +44,7 @@ sentinel.db
 sentinel.toml
 log
 spark
+
+### Realm ###
+*.realm
+*.realm.lock

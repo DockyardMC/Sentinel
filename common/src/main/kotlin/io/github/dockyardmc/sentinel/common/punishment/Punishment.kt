@@ -1,31 +1,34 @@
 package io.github.dockyardmc.sentinel.common.punishment
 
+import cz.lukynka.hollow.RealmEnum
 import io.github.dockyardmc.sentinel.common.utils.FriendlyLocalDateTime
-import io.github.dockyardmc.tide.Codec
-import io.github.dockyardmc.tide.Codecs
+import io.realm.kotlin.types.RealmObject
 
-data class Punishment(
-    val type: Type,
-    val expires: FriendlyLocalDateTime?,
-    val received: FriendlyLocalDateTime,
-    val reason: String,
-    val punisher: String,
+class Punishment(
+    private var realmType: RealmEnum?,
+    var expires: FriendlyLocalDateTime?,
+    var received: FriendlyLocalDateTime?,
+    var reason: String,
+    var punisher: String,
     var active: Boolean = true,
-    val acknowledgementString: String? = null,
-) {
+    var acknowledgementString: String? = null,
+) : RealmObject {
 
-    companion object {
-        val CODEC = Codec.of(
-            "type", Codec.enum<Type>(), Punishment::type,
-            "expires", FriendlyLocalDateTime.CODEC.optional(), Punishment::expires,
-            "received", FriendlyLocalDateTime.CODEC, Punishment::received,
-            "reason", Codecs.String, Punishment::reason,
-            "punisher", Codecs.String, Punishment::punisher,
-            "active", Codecs.Boolean, Punishment::active,
-            "acknowledge_string", Codecs.String.optional(), Punishment::acknowledgementString,
-            ::Punishment
-        )
-    }
+    var type
+        get() = realmType!!.getVal<Type>()
+        set(value) {
+            realmType = RealmEnum.of(value)
+        }
+
+    constructor() : this(
+        realmType = RealmEnum.of(Type.BAN),
+        expires = FriendlyLocalDateTime(0),
+        received = FriendlyLocalDateTime(0),
+        reason = "",
+        punisher = "",
+        active = false,
+        acknowledgementString = null
+    )
 
     enum class Type(val kicksPlayer: Boolean, val past: String) {
         BAN(true, "BANNED"),

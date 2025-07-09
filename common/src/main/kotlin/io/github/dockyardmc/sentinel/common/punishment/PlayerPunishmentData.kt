@@ -1,20 +1,17 @@
 package io.github.dockyardmc.sentinel.common.punishment
 
-import io.github.dockyardmc.tide.Codec
-import io.github.dockyardmc.tide.Codecs
-import java.util.*
+import cz.lukynka.hollow.EMPTY
+import io.realm.kotlin.ext.realmListOf
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.RealmUUID
+import io.realm.kotlin.types.annotations.PrimaryKey
 
-data class PlayerPunishmentData(
-    val uuid: UUID,
+class PlayerPunishmentData(
+    @PrimaryKey
+    var uuid: RealmUUID,
     var lastKnownUsername: String,
-    val punishments: MutableList<Punishment>,
-) {
-    companion object {
-        val CODEC = Codec.of(
-            "uuid", Codecs.UUID, PlayerPunishmentData::uuid,
-            "last_known_username", Codecs.String, PlayerPunishmentData::lastKnownUsername,
-            "punishments", Punishment.CODEC.mutableList(), PlayerPunishmentData::punishments,
-            ::PlayerPunishmentData
-        )
-    }
+    var punishments: RealmList<Punishment>,
+) : RealmObject {
+    constructor() : this(RealmUUID.EMPTY, "", realmListOf())
 }

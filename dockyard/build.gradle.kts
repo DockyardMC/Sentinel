@@ -1,4 +1,5 @@
 plugins {
+    id("io.realm.kotlin") version "3.0.0"
     kotlin("jvm")
 }
 
@@ -10,7 +11,8 @@ repositories {
 }
 
 dependencies {
-    implementation("io.github.dockyardmc:dockyard:0.9.3")
+    implementation("cz.lukynka:hollow-realm:1.2")
+    implementation("io.github.dockyardmc:dockyard:0.10.2")
     implementation(project(":common"))
     testImplementation(kotlin("test"))
 }

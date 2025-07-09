@@ -14,12 +14,14 @@ fun getOrFetchSentinelPlayer(username: String): CompletableFuture<SentinelPlayer
         if (localPlayer != null) {
             future.complete(localPlayer.toSentinelPlayer())
         } else {
-            val uuid = MojangUtil.getUUIDFromUsername(username)
-            if (uuid == null) {
-                future.complete(null)
-                return@runAsync
+            MojangUtil.getUUIDFromUsername(username).thenAccept { uuid ->
+
+                if (uuid == null) {
+                    future.complete(null)
+                    return@thenAccept
+                }
+                future.complete(SentinelPlayer(uuid, username))
             }
-            future.complete(SentinelPlayer(uuid, username))
         }
 
     }

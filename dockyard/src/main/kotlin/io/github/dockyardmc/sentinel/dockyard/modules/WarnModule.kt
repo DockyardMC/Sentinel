@@ -28,7 +28,7 @@ class WarnModule : SentinelModule {
 
             event.cancel()
 
-            if (packet.message == punishment.acknowledgementString!!) {
+            if (packet.message == punishment.acknowledgementString) {
                 Sentinel.setWarnAcknowledged(sentinelPlayer, punishment)
             } else {
                 Sentinel.sendWarningAcknowledgeMessage(sentinelPlayer, punishment)
